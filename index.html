@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0b0f1a;
+    --surface:   #111827;
+    --card:      #1a2236;
+    --border:    #243050;
+    --purple:    #7c3aed;
+    --violet:    #a855f7;
+    --cyan:      #06b6d4;
+    --emerald:   #10b981;
+    --rose:      #f43f5e;
+    --amber:     #f59e0b;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --white:     #ffffff;
+    --gradient:  linear-gradient(135deg, #7c3aed, #06b6d4);
+    --glow-p:    0 0 30px rgba(124,58,237,0.35);
+    --glow-c:    0 0 30px rgba(6,182,212,0.35);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── animated background grid ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridDrift 20s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes gridDrift { to { background-position: 40px 40px; } }
+
+  /* ── orbs ── */
+  .orb {
+    position: fixed; border-radius: 50%;
+    filter: blur(80px); pointer-events: none; z-index: 0;
+  }
+  .orb-1 { width:400px; height:400px; background:rgba(124,58,237,0.18); top:-100px; left:-100px; animation: drift1 12s ease-in-out infinite alternate; }
+  .orb-2 { width:350px; height:350px; background:rgba(6,182,212,0.15);  bottom:-80px; right:-80px; animation: drift2 10s ease-in-out infinite alternate; }
+  .orb-3 { width:250px; height:250px; background:rgba(16,185,129,0.10); top:40%; left:55%; animation: drift3 14s ease-in-out infinite alternate; }
+  @keyframes drift1 { to { transform: translate(60px,80px); } }
+  @keyframes drift2 { to { transform: translate(-60px,-60px); } }
+  @keyframes drift3 { to { transform: translate(40px,-40px); } }
+
+  /* ── layout ── */
+  .wrapper { position: relative; z-index: 1; max-width: 1140px; margin: 0 auto; padding: 0 24px 60px; }
+
+  /* ── header ── */
+  header {
+    text-align: center; padding: 52px 0 44px;
+    animation: fadeDown .7s ease both;
+  }
+  .logo-ring {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 72px; height: 72px; border-radius: 20px;
+    background: var(--gradient); box-shadow: var(--glow-p);
+    font-size: 34px; margin-bottom: 20px;
+    animation: pulse-ring 3s ease-in-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%,100% { box-shadow: var(--glow-p); transform: scale(1); }
+    50% { box-shadow: 0 0 50px rgba(124,58,237,.55); transform: scale(1.04); }
+  }
+  header h1 {
+    font-size: clamp(26px,5vw,42px); font-weight: 700; letter-spacing: -1px;
+    background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  header p { color: var(--muted); margin-top: 8px; font-size: 15px; }
+
+  /* ── stat chips ── */
+  .stats {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 40px; animation: fadeUp .7s .15s ease both;
+  }
+  .stat {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 40px; padding: 10px 22px;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .stat:hover { transform: translateY(-3px); box-shadow: var(--glow-p); }
+  .stat-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .stat-label { font-size: 13px; color: var(--muted); }
+  .stat-val { font-weight: 700; font-size: 18px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── nav tabs ── */
+  .tabs {
+    display: flex; gap: 6px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 6px; margin-bottom: 32px;
+    animation: fadeUp .7s .25s ease both;
+    overflow-x: auto;
+  }
+  .tab {
+    flex: 1; min-width: 110px; display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 11px 18px; border-radius: 10px; border: none;
+    background: transparent; color: var(--muted); font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: all .25s;
+  }
+  .tab:hover { color: var(--white); background: rgba(255,255,255,.05); }
+  .tab.active {
+    background: var(--gradient); color: var(--white);
+    box-shadow: 0 4px 20px rgba(124,58,237,.4);
+  }
+  .tab-icon { font-size: 16px; }
+
+  /* ── panels ── */
+  .panel { display: none; animation: slideIn .35s ease both; }
+  .panel.active { display: block; }
+  @keyframes slideIn { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform: none; } }
+
+  /* ── cards ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.3);
+  }
+  .card-title {
+    font-size: 18px; font-weight: 600; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-title span { font-size: 20px; }
+
+  /* ── form ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width:600px){ .form-grid { grid-template-columns:1fr; } }
+
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field.full { grid-column: 1/-1; }
+  label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  input, select {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
+    color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 14px;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  input:focus, select:focus {
+    border-color: var(--violet);
+    box-shadow: 0 0 0 3px rgba(168,85,247,.18);
+  }
+  select option { background: var(--surface); }
+
+  /* ── buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 13px 28px; border-radius: 10px; border: none;
+    font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all .22s; position: relative; overflow: hidden;
+  }
+  .btn::after {
+    content:''; position:absolute; inset:0;
+    background: rgba(255,255,255,.12); opacity:0; transition: opacity .2s;
+  }
+  .btn:hover::after { opacity:1; }
+  .btn:active { transform: scale(.97); }
+
+  .btn-primary {
+    background: var(--gradient); color: var(--white);
+    box-shadow: 0 4px 18px rgba(124,58,237,.4);
+  }
+  .btn-primary:hover { box-shadow: 0 6px 30px rgba(124,58,237,.6); transform: translateY(-2px); }
+
+  .btn-danger {
+    background: linear-gradient(135deg,#f43f5e,#e11d48);
+    color: #fff; box-shadow: 0 4px 18px rgba(244,63,94,.35);
+  }
+  .btn-danger:hover { box-shadow: 0 6px 28px rgba(244,63,94,.55); transform: translateY(-2px); }
+
+  .btn-ghost {
+    background: transparent; border: 1.5px solid var(--border); color: var(--muted);
+  }
+  .btn-ghost:hover { border-color: var(--violet); color: var(--violet); background: rgba(168,85,247,.08); }
+
+  /* ── search bar ── */
+  .search-wrap { position: relative; margin-bottom: 24px; }
+  .search-wrap input { width: 100%; padding-left: 44px; font-size: 15px; }
+  .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--muted); pointer-events: none; }
+
+  /* ── table ── */
+  .table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead tr { background: linear-gradient(90deg,rgba(124,58,237,.15),rgba(6,182,212,.1)); }
+  th { padding: 14px 18px; text-align: left; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  td { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+  tbody tr { transition: background .18s; }
+  tbody tr:hover { background: rgba(124,58,237,.07); }
+
+  .badge {
+    display: inline-block; padding: 3px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+  }
+  .badge-cse   { background:rgba(124,58,237,.2); color:#a78bfa; border:1px solid rgba(124,58,237,.3); }
+  .badge-ece   { background:rgba(6,182,212,.2);  color:#67e8f9; border:1px solid rgba(6,182,212,.3); }
+  .badge-mech  { background:rgba(245,158,11,.2); color:#fcd34d; border:1px solid rgba(245,158,11,.3); }
+  .badge-civil { background:rgba(16,185,129,.2); color:#6ee7b7; border:1px solid rgba(16,185,129,.3); }
+  .badge-eee   { background:rgba(244,63,94,.2);  color:#fda4af; border:1px solid rgba(244,63,94,.3); }
+  .badge-it    { background:rgba(99,102,241,.2);  color:#a5b4fc; border:1px solid rgba(99,102,241,.3); }
+
+  .avatar {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0;
+  }
+  .name-cell { display: flex; align-items: center; gap: 12px; }
+
+  .action-btns { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    transition: all .2s;
+  }
+  .icon-btn:hover { border-color: var(--rose); color: var(--rose); background: rgba(244,63,94,.1); }
+
+  /* ── empty state ── */
+  .empty {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+  }
+  .empty-icon { font-size: 52px; margin-bottom: 14px; opacity: .5; }
+  .empty h3 { font-size: 17px; margin-bottom: 6px; color: var(--text); }
+
+  /* ── toast ── */
+  #toast {
+    position: fixed; bottom: 30px; right: 30px; z-index: 999;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px 22px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    transform: translateY(120%); opacity: 0;
+    transition: all .35s cubic-bezier(.34,1.56,.64,1);
+    max-width: 340px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast .toast-icon { font-size: 20px; flex-shrink:0; }
+  #toast .toast-msg { font-size: 14px; font-weight: 500; }
+
+  /* ── confirm modal ── */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+    backdrop-filter: blur(4px);
+  }
+  .overlay.show { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 36px; max-width: 380px; width: 90%;
+    transform: scale(.9); transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    text-align: center;
+  }
+  .overlay.show .modal { transform: scale(1); }
+  .modal-icon { font-size: 48px; margin-bottom: 16px; }
+  .modal h3 { font-size: 20px; margin-bottom: 8px; }
+  .modal p { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+  .modal-btns { display: flex; gap: 12px; justify-content: center; }
+
+  /* ── search result highlight ── */
+  .highlight { background: rgba(168,85,247,.3); border-radius: 3px; padding: 0 2px; }
+
+  /* ── animations ── */
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-18px); } to { opacity:1; transform:none; } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(18px);  } to { opacity:1; transform:none; } }
+  @keyframes rowIn    { from { opacity:0; transform:translateY(10px);  } to { opacity:1; transform:none; } }
+
+  .row-in { animation: rowIn .3s ease both; }
+
+  /* ── detail card ── */
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 16px; }
+  .detail-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .detail-item .di-label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 6px; }
+  .detail-item .di-val   { font-size: 15px; font-weight: 600; }
+
+  /* ── gpa bar ── */
+  .gpa-bar { height: 6px; border-radius: 3px; background: var(--border); margin-top: 6px; overflow: hidden; }
+  .gpa-fill { height: 100%; border-radius: 3px; background: var(--gradient); transition: width 1s ease; }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-ring">🎓</div>
+    <h1>Student Management System</h1>
+    <p>Manage, track, and analyse student records with ease</p>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-dot" style="background:#a78bfa;box-shadow:0 0 8px #a78bfa"></div>
+      <span class="stat-label">Total Students</span>
+      <span class="stat-val" id="stat-total">0</span>
+    </div>
+    <div class="stat">
+      <div class="stat-dot" style="background:#67e8f9;box-shadow:0 0 8px #67e8f9"></div>
+      <span class="stat-label">Departments</span>
+      <span class="stat-val" id="stat-dept">0</span>
+    </div>
+    <div class="stat">
+      <div class="stat-dot" style="background:#6ee7b7;box-shadow:0 0 8px #6ee7b7"></div>
+      <span class="stat-label">Avg GPA</span>
+      <span class="stat-val" id="stat-gpa">—</span>
+    </div>
+    <div class="stat">
+      <div class="stat-dot" style="background:#fcd34d;box-shadow:0 0 8px #fcd34d"></div>
+      <span class="stat-label">Newest Batch</span>
+      <span class="stat-val" id="stat-batch">—</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('add')" id="tab-add">
+      <span class="tab-icon">➕</span> Add Student
+    </button>
+    <button class="tab" onclick="switchTab('view')" id="tab-view">
+      <span class="tab-icon">📋</span> View All
+    </button>
+    <button class="tab" onclick="switchTab('search')" id="tab-search">
+      <span class="tab-icon">🔍</span> Search
+    </button>
+    <button class="tab" onclick="switchTab('delete')" id="tab-delete">
+      <span class="tab-icon">🗑️</span> Delete
+    </button>
+  </div>
+
+  <!-- ── PANEL: ADD ── -->
+  <div class="panel active" id="panel-add">
+    <div class="card">
+      <div class="card-title"><span>✨</span> Enrol a New Student</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Student ID</label>
+          <input type="text" id="f-id" placeholder="e.g. STU-2024-001">
+        </div>
+        <div class="field">
+          <label>Full Name</label>
+          <input type="text" id="f-name" placeholder="e.g. Aarav Sharma">
+        </div>
+        <div class="field">
+          <label>Age</label>
+          <input type="number" id="f-age" placeholder="18" min="16" max="35">
+        </div>
+        <div class="field">
+          <label>Department</label>
+          <select id="f-dept">
+            <option value="">Select department…</option>
+            <option value="CSE">Computer Science & Engineering</option>
+            <option value="ECE">Electronics & Communication</option>
+            <option value="MECH">Mechanical Engineering</option>
+            <option value="CIVIL">Civil Engineering</option>
+            <option value="EEE">Electrical & Electronics</option>
+            <option value="IT">Information Technology</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Batch Year</label>
+          <input type="number" id="f-batch" placeholder="2024" min="2010" max="2030">
+        </div>
+        <div class="field">
+          <label>GPA (0 – 10)</label>
+          <input type="number" id="f-gpa" placeholder="8.5" min="0" max="10" step="0.1">
+        </div>
+        <div class="field full">
+          <label>Email Address</label>
+          <input type="email" id="f-email" placeholder="student@college.edu">
+        </div>
+      </div>
+      <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="addStudent()">🎓 Enrol Student</button>
+        <button class="btn btn-ghost"   onclick="clearForm()">↺ Clear Form</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PANEL: VIEW ── -->
+  <div class="panel" id="panel-view">
+    <div class="card">
+      <div class="card-title"><span>📋</span> All Students</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔎</span>
+        <input type="text" id="view-search" placeholder="Filter by name, ID, or department…" oninput="renderTable()">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Student</th><th>ID</th><th>Age</th>
+              <th>Dept</th><th>Batch</th><th>GPA</th><th>Email</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="student-tbody"></tbody>
+        </table>
+      </div>
+      <div id="view-empty" class="empty" style="display:none">
+        <div class="empty-icon">🎒</div>
+        <h3>No students found</h3>
+        <p>Adjust your filter or add new students.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PANEL: SEARCH ── -->
+  <div class="panel" id="panel-search">
+    <div class="card">
+      <div class="card-title"><span>🔍</span> Search Student</div>
+      <div class="search-wrap" style="margin-bottom:12px">
+        <span class="search-icon">🔎</span>
+        <input type="text" id="search-q" placeholder="Enter name, ID, or email…" oninput="doSearch()">
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
+        <select id="search-dept" onchange="doSearch()" style="flex:1;min-width:160px">
+          <option value="">All departments</option>
+          <option value="CSE">CSE</option><option value="ECE">ECE</option>
+          <option value="MECH">MECH</option><option value="CIVIL">CIVIL</option>
+          <option value="EEE">EEE</option><option value="IT">IT</option>
+        </select>
+        <select id="search-batch" onchange="doSearch()" style="flex:1;min-width:130px">
+          <option value="">All batches</option>
+        </select>
+      </div>
+      <div id="search-results"></div>
+    </div>
+  </div>
+
+  <!-- ── PANEL: DELETE ── -->
+  <div class="panel" id="panel-delete">
+    <div class="card">
+      <div class="card-title"><span>🗑️</span> Remove Student</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔎</span>
+        <input type="text" id="del-search" placeholder="Search by name or ID to locate student…" oninput="renderDeleteList()">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Student</th><th>ID</th><th>Dept</th><th>Batch</th><th>Remove</th></tr></thead>
+          <tbody id="del-tbody"></tbody>
+        </table>
+      </div>
+      <div id="del-empty" class="empty" style="display:none">
+        <div class="empty-icon">🔍</div>
+        <h3>No matches</h3>
+        <p>Try a different search term.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- .wrapper -->
+
+<!-- Toast -->
+<div id="toast"><span class="toast-icon" id="toast-icon"></span><span class="toast-msg" id="toast-msg"></span></div>
+
+<!-- Confirm Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-icon">⚠️</div>
+    <h3>Delete Student?</h3>
+    <p id="modal-desc">This action cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="modal-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Data Store (simulates Java ArrayList) ──
+let students = [];
+let deleteTarget = null;
+
+// ── Avatar palette ──
+const COLORS = ['#7c3aed','#06b6d4','#10b981','#f59e0b','#f43f5e','#6366f1','#ec4899','#14b8a6'];
+const deptClass = { CSE:'cse',ECE:'ece',MECH:'mech',CIVIL:'civil',EEE:'eee',IT:'it' };
+
+function avatarColor(name) {
+  let h = 0; for (let c of name) h += c.charCodeAt(0);
+  return COLORS[h % COLORS.length];
+}
+function initials(name) {
+  return name.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
+
+// ── Tab switching ──
+function switchTab(id) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if (id==='view')   renderTable();
+  if (id==='search') { doSearch(); populateBatchFilter(); }
+  if (id==='delete') renderDeleteList();
+}
+
+// ── Add Student ──
+function addStudent() {
+  const id    = val('f-id');
+  const name  = val('f-name');
+  const age   = val('f-age');
+  const dept  = val('f-dept');
+  const batch = val('f-batch');
+  const gpa   = val('f-gpa');
+  const email = val('f-email');
+
+  if (!id||!name||!age||!dept||!batch||!gpa||!email) { toast('⚠️','Please fill in all fields.','amber'); return; }
+  if (students.find(s=>s.id===id)) { toast('❌','Student ID already exists.','rose'); return; }
+  if (+gpa<0||+gpa>10) { toast('⚠️','GPA must be between 0 and 10.','amber'); return; }
+
+  const s = { id, name, age:+age, dept, batch:+batch, gpa:+gpa, email, createdAt: Date.now() };
+  students.unshift(s);
+  updateStats();
+  clearForm();
+  toast('✅', `${name} enrolled successfully!`, 'emerald');
+}
+
+function val(id) { return document.getElementById(id).value.trim(); }
+
+function clearForm() {
+  ['f-id','f-name','f-age','f-dept','f-batch','f-gpa','f-email'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.value=''; el.blur();
+  });
+}
+
+// ── Stats ──
+function updateStats() {
+  document.getElementById('stat-total').textContent = students.length;
+  const depts = [...new Set(students.map(s=>s.dept))];
+  document.getElementById('stat-dept').textContent  = depts.length||'—';
+  if (students.length) {
+    const avg = (students.reduce((a,s)=>a+s.gpa,0)/students.length).toFixed(2);
+    document.getElementById('stat-gpa').textContent = avg;
+  } else {
+    document.getElementById('stat-gpa').textContent = '—';
+  }
+  if (students.length) {
+    const newest = Math.max(...students.map(s=>s.batch));
+    document.getElementById('stat-batch').textContent = newest;
+  } else {
+    document.getElementById('stat-batch').textContent = '—';
+  }
+}
+
+// ── Render Table (View panel) ──
+function renderTable() {
+  const q = document.getElementById('view-search').value.toLowerCase();
+  const list = students.filter(s =>
+    s.name.toLowerCase().includes(q) ||
+    s.id.toLowerCase().includes(q) ||
+    s.dept.toLowerCase().includes(q) ||
+    s.email.toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('student-tbody');
+  const empty = document.getElementById('view-empty');
+
+  if (!list.length) {
+    tbody.innerHTML=''; empty.style.display='block'; return;
+  }
+  empty.style.display='none';
+  tbody.innerHTML = list.map((s,i)=>`
+    <tr class="row-in" style="animation-delay:${i*0.04}s">
+      <td style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:13px">${i+1}</td>
+      <td>
+        <div class="name-cell">
+          <div class="avatar" style="background:${avatarColor(s.name)}">${initials(s.name)}</div>
+          <div>
+            <div style="font-weight:600">${s.name}</div>
+            <div style="font-size:12px;color:var(--muted)">${s.email}</div>
+          </div>
+        </div>
+      </td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--violet)">${s.id}</td>
+      <td>${s.age}</td>
+      <td><span class="badge badge-${deptClass[s.dept]||'cse'}">${s.dept}</span></td>
+      <td>${s.batch}</td>
+      <td>
+        <div style="font-weight:700;font-size:15px;color:${gpaColor(s.gpa)}">${s.gpa}</div>
+        <div class="gpa-bar" style="width:70px"><div class="gpa-fill" style="width:${s.gpa*10}%"></div></div>
+      </td>
+      <td style="font-size:13px;color:var(--muted)">${s.email}</td>
+      <td>
+        <div class="action-btns">
+          <button class="icon-btn" title="Delete" onclick="promptDelete('${s.id}')">🗑</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function gpaColor(g) {
+  if (g>=9)   return '#6ee7b7';
+  if (g>=7.5) return '#67e8f9';
+  if (g>=6)   return '#fcd34d';
+  return '#fda4af';
+}
+
+// ── Search Panel ──
+function populateBatchFilter() {
+  const sel = document.getElementById('search-batch');
+  const batches = [...new Set(students.map(s=>s.batch))].sort((a,b)=>b-a);
+  sel.innerHTML = '<option value="">All batches</option>' +
+    batches.map(b=>`<option value="${b}">${b}</option>`).join('');
+}
+
+function doSearch() {
+  const q     = document.getElementById('search-q').value.toLowerCase();
+  const dept  = document.getElementById('search-dept').value;
+  const batch = document.getElementById('search-batch').value;
+
+  let list = students;
+  if (dept)  list = list.filter(s=>s.dept===dept);
+  if (batch) list = list.filter(s=>s.batch===+batch);
+  if (q)     list = list.filter(s=>
+    s.name.toLowerCase().includes(q)||s.id.toLowerCase().includes(q)||s.email.toLowerCase().includes(q)
+  );
+
+  const res = document.getElementById('search-results');
+  if (!list.length) {
+    res.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>No results</h3><p>Try adjusting your search or filters.</p></div>`;
+    return;
+  }
+
+  res.innerHTML = `<div class="detail-grid">` + list.map(s=>`
+    <div class="detail-item row-in" style="border-top:3px solid ${avatarColor(s.name)}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="avatar" style="background:${avatarColor(s.name)};width:42px;height:42px;border-radius:12px;font-size:16px">${initials(s.name)}</div>
+        <div>
+          <div style="font-weight:700;font-size:15px">${highlight(s.name,q)}</div>
+          <div style="font-size:12px;color:var(--muted)">${highlight(s.id,q)}</div>
+        </div>
+      </div>
+      <div class="di-label">Department</div>
+      <div class="di-val"><span class="badge badge-${deptClass[s.dept]||'cse'}">${s.dept}</span></div>
+      <div class="di-label" style="margin-top:10px">Batch / Age</div>
+      <div class="di-val">${s.batch} · ${s.age} yrs</div>
+      <div class="di-label" style="margin-top:10px">GPA</div>
+      <div class="di-val" style="color:${gpaColor(s.gpa)}">${s.gpa} / 10</div>
+      <div class="gpa-bar"><div class="gpa-fill" style="width:${s.gpa*10}%"></div></div>
+      <div class="di-label" style="margin-top:10px">Email</div>
+      <div class="di-val" style="font-size:12px;word-break:break-all">${highlight(s.email,q)}</div>
+    </div>
+  `).join('') + `</div>
+  <p style="color:var(--muted);font-size:13px;margin-top:16px">${list.length} result${list.length!==1?'s':''} found</p>`;
+}
+
+function highlight(str, q) {
+  if (!q) return str;
+  return str.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),
+    '<span class="highlight">$1</span>');
+}
+
+// ── Delete Panel ──
+function renderDeleteList() {
+  const q = document.getElementById('del-search').value.toLowerCase();
+  const list = students.filter(s=>
+    s.name.toLowerCase().includes(q)||s.id.toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('del-tbody');
+  const empty = document.getElementById('del-empty');
+
+  if (!list.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = list.map((s,i)=>`
+    <tr class="row-in" style="animation-delay:${i*0.04}s">
+      <td>
+        <div class="name-cell">
+          <div class="avatar" style="background:${avatarColor(s.name)}">${initials(s.name)}</div>
+          <span style="font-weight:600">${s.name}</span>
+        </div>
+      </td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--violet)">${s.id}</td>
+      <td><span class="badge badge-${deptClass[s.dept]||'cse'}">${s.dept}</span></td>
+      <td>${s.batch}</td>
+      <td>
+        <button class="btn btn-danger" style="padding:8px 16px;font-size:13px" onclick="promptDelete('${s.id}')">
+          🗑 Remove
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ── Modal ──
+function promptDelete(id) {
+  const s = students.find(x=>x.id===id);
+  if (!s) return;
+  deleteTarget = id;
+  document.getElementById('modal-desc').textContent = `Remove ${s.name} (${s.id}) from the system? This cannot be undone.`;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('modal-confirm').onclick = confirmDelete;
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('show');
+  deleteTarget = null;
+}
+
+function confirmDelete() {
+  const s = students.find(x=>x.id===deleteTarget);
+  students = students.filter(x=>x.id!==deleteTarget);
+  closeModal();
+  updateStats();
+  renderTable();
+  renderDeleteList();
+  toast('🗑️', `${s.name} has been removed.`, 'rose');
+}
+
+// ── Toast ──
+function toast(icon, msg, type) {
+  const t   = document.getElementById('toast');
+  const col = { emerald:'#10b981', rose:'#f43f5e', amber:'#f59e0b', cyan:'#06b6d4' }[type]||'#a78bfa';
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent  = msg;
+  t.style.borderColor = col;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+// ── Close modal on outside click ──
+document.getElementById('overlay').addEventListener('click', e=>{
+  if (e.target===document.getElementById('overlay')) closeModal();
+});
+
+// ── Seed sample data so the UI looks alive on first load ──
+const seed = [
+  { id:'STU-2024-001', name:'Aarav Sharma',    age:20, dept:'CSE',  batch:2024, gpa:9.2, email:'aarav@college.edu'   },
+  { id:'STU-2024-002', name:'Priya Nair',      age:21, dept:'ECE',  batch:2024, gpa:8.7, email:'priya@college.edu'   },
+  { id:'STU-2023-003', name:'Karthik Raja',    age:22, dept:'MECH', batch:2023, gpa:7.9, email:'karthik@college.edu' },
+  { id:'STU-2023-004', name:'Divya Menon',     age:20, dept:'CIVIL',batch:2023, gpa:8.1, email:'divya@college.edu'   },
+  { id:'STU-2022-005', name:'Vikram Pandey',   age:22, dept:'EEE',  batch:2022, gpa:7.3, email:'vikram@college.edu'  },
+  { id:'STU-2024-006', name:'Sneha Iyer',      age:19, dept:'IT',   batch:2024, gpa:9.5, email:'sneha@college.edu'   },
+];
+students = seed;
+updateStats();
+</script>
+</body>
+</html>
